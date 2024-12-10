@@ -49,6 +49,61 @@ def validate_transaction(data, required_fields=None):
         return False, f"Missing required fields: {', '.join(missing_fields)}"
     return True, None
 
+@app.route('/api/customers', methods=['GET'])
+def get_customers():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM customers")
+        customers = cursor.fetchall()
+        return jsonify({'success': True, 'data': customers}), HTTPStatus.OK
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/customers/<int:customer_id>', methods=['GET'])
+def get_customer(customer_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
+        customer = cursor.fetchone()
+        if customer:
+            return jsonify({'success': True, 'data': customer}), HTTPStatus.OK
+        return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.NOT_FOUND
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+        
+@app.route('/api/customers', methods=['POST'])
+def create_customer():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['customer_name', 'customer_phone', 'customer_email', 'customer_street','customer_municipality', 'customer_city', 'customer_province', 'customer_zipcode']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO customers (customer_name, customer_phone, customer_email, customer_street, customer_municipality, customer_city, customer_province, customer_zipcode)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (data['customer_name'], data['customer_phone'], data['customer_email'], data['customer_street'], data['customer_municipality'],data['customer_city'],data['customer_province'], data['customer_zipcode']))
+    conn.commit()
+    new_customer_id = cursor.lastrowid
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'data': {'customer_id': new_customer_id, **data}}), HTTPStatus.CREATED
+
+        
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
     conn = get_db_connection()
@@ -70,36 +125,7 @@ def get_account(account_id):
     if account:
         return jsonify({'success': True, 'data': account}), HTTPStatus.OK
     return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.NOT_FOUND
-
-@app.route('/api/customers', methods=['GET'])
-def get_customers():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM customers")
-        customers = cursor.fetchall()
-        return jsonify({'success': True, 'data': customers}), HTTPStatus.OK
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
-    finally:
-        cursor.close()
-        conn.close()
-        
-@app.route('/api/customers/<int:customer_id>', methods=['GET'])
-def get_customer(customer_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
-        customer = cursor.fetchone()
-        if customer:
-            return jsonify({'success': True, 'data': customer}), HTTPStatus.OK
-        return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.NOT_FOUND
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
-    finally:
-        cursor.close()
-        conn.close()
+      
 
 @app.route('/api/merchants', methods=['GET'])
 def get_merchants():
