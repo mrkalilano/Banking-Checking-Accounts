@@ -18,8 +18,20 @@ def get_db_connection():
 def get_accounts():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM ")
+    cursor.execute("SELECT * FROM mydb.accounts;")
     accounts = cursor.fetchall()
     cursor.close()
     conn.close()
     return jsonify({'success': True, 'data': accounts, 'total': len(accounts)}), HTTPStatus.OK
+
+@app.route('/api/accounts/<int:account_id>', methods=['GET'])
+def get_account(account_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM mydb.accounts WHERE account_id = %s", (account_id,))
+    account = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if account:
+        return jsonify({'success': True, 'data': account}), HTTPStatus.OK
+    return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.NOT_FOUND
