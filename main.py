@@ -103,6 +103,31 @@ def create_customer():
 
     return jsonify({'success': True, 'data': {'customer_id': new_customer_id, **data}}), HTTPStatus.CREATED
 
+@app.route('/api/customers/<int:customer_id>', methods=['PUT'])
+def update_customer(customer_id):
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['customer_name', 'customer_phone', 'customer_email', 'customer_street', 'customer_municipality', 'customer_city', 'customer_province', 'customer_zipcode']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE customers SET customer_name = %s, customer_phone = %s, customer_email = %s, customer_street = %s, customer_municipality = %s, customer_city = %s, customer_province = %s, customer_zipcode = %s
+        WHERE customer_id = %s
+    """, (data['customer_name'], data['customer_phone'], data['customer_email'], data['customer_street'], data['customer_municipality'], data['customer_city'], data['customer_province'], data['customer_zipcode'], customer_id))
+    conn.commit()
+    if cursor.rowcount == 0:
+        return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.NOT_FOUND
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Customer updated successfully'}), HTTPStatus.OK
+
         
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
