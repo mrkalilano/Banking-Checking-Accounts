@@ -204,6 +204,31 @@ def create_account():
     conn.close()
 
     return jsonify({'success': True, 'data': {'account_id': new_account_id, **data}}), HTTPStatus.CREATED
+
+@app.route('/api/accounts/<int:account_id>', methods=['PUT'])
+def update_account(account_id):
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['account_name', 'current_balance', 'Customers_customer_id']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE accounts SET account_name = %s, current_balance = %s, Customers_customer_id = %s
+        WHERE account_id = %s
+    """, (data['account_name'], data['current_balance'], data['Customers_customer_id'], account_id))
+    conn.commit()
+    if cursor.rowcount == 0:
+        return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.NOT_FOUND
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Accounts updated successfully'}), HTTPStatus.OK
       
 
 @app.route('/api/merchants', methods=['GET'])
