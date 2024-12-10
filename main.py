@@ -128,6 +128,27 @@ def update_customer(customer_id):
 
     return jsonify({'success': True, 'message': 'Customer updated successfully'}), HTTPStatus.OK
 
+@app.route('/api/customers/<int:customer_id>', methods=['DELETE'])
+def delete_customer(customer_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM customers WHERE customer_id = %s", (customer_id,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.NOT_FOUND
+
+        return jsonify({'success': True, 'message': 'Customer deleted successfully'}), HTTPStatus.OK
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'An error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    finally:
+        cursor.close()
+        conn.close()
+
         
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
