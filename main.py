@@ -229,6 +229,27 @@ def update_account(account_id):
     conn.close()
 
     return jsonify({'success': True, 'message': 'Accounts updated successfully'}), HTTPStatus.OK
+
+@app.route('/api/accounts/<int:account_id>', methods=['DELETE'])
+def delete_account(account_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM accounts WHERE account_id = %s", (account_id,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.NOT_FOUND
+
+        return jsonify({'success': True, 'message': 'Account deleted successfully'}), HTTPStatus.OK
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'An error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    finally:
+        cursor.close()
+        conn.close()
       
 
 @app.route('/api/merchants', methods=['GET'])
@@ -261,6 +282,30 @@ def get_merchant(merchant_id):
         cursor.close()
         conn.close()
         
+@app.route('/api/merchants', methods=['POST'])
+def create_merchant():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['merchant_name', 'merchant_email']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO merchants (merchant_name, merchant_email)
+        VALUES (%s, %s)
+    """, (data['merchant_name'], data['merchant_email']))
+    conn.commit()
+    new_merchant_id = cursor.lastrowid
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'data': {'merchant_id': new_merchant_id, **data}}), HTTPStatus.CREATED
+        
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
     try:
@@ -290,3 +335,6 @@ def get_transaction(transaction_id):
     finally:
         cursor.close()
         conn.close()
+        
+if __name__ == '__main__':
+    app.run(debug=True)
