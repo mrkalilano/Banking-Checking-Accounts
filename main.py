@@ -171,6 +171,39 @@ def get_account(account_id):
     if account:
         return jsonify({'success': True, 'data': account}), HTTPStatus.OK
     return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.NOT_FOUND
+
+@app.route('/api/accounts', methods=['POST'])
+def create_account():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['account_name', 'current_balance', 'Customers_customer_id']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) FROM customers WHERE customer_id = %s
+    """, (data['Customers_customer_id'],))
+    customer_exists = cursor.fetchone()[0]
+
+    if not customer_exists:
+        return jsonify({'success': False, 'error': 'Customer not found'}), HTTPStatus.BAD_REQUEST
+
+    cursor.execute("""
+        INSERT INTO accounts (account_name, current_balance, Customers_customer_id)
+        VALUES (%s, %s, %s)
+    """, (data['account_name'], data['current_balance'], data['Customers_customer_id']))
+    conn.commit()
+    new_account_id = cursor.lastrowid
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'data': {'account_id': new_account_id, **data}}), HTTPStatus.CREATED
       
 
 @app.route('/api/merchants', methods=['GET'])
