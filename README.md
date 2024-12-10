@@ -1,11 +1,11 @@
-# Project Title
+# Banking Checking Accounts
 
 ## Description
-Brief description of your system
+The Banking Checking Accounts System is designed to manage and track customer checking accounts and their associated transactions. This streamlined system focuses on essential banking operations while maintaining accurate financial records and customer relationships.
 
 ## Installation
-```cmd
-pip install -r requirements.txt
+pip install flask
+pip install mysql-connector-python
 
 ## Configuration
 Environment variables needed:
@@ -22,7 +22,7 @@ Endpoint	Method		Description
 
 ## Testing
  Instructions for running tests
-…
+ï¿½
 
 ## Git Commit Guidelines
 
