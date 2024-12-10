@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from http import HTTPStatus
 import mysql.connector
+from datetime import datetime
+
 
 app = Flask(__name__)
 
@@ -29,6 +31,14 @@ def validate_customer(data, required_fields=None):
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return False, f"Missing required fields: {', '.join(missing_fields)}"
+    
+def validate_merchant(data, required_fields=None):
+    if required_fields is None:
+        required_fields = ['merchant_name', 'merchant_email']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return False, f"Missing required fields: {', '.join(missing_fields)}"
+    return True, None
 
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
@@ -81,3 +91,34 @@ def get_customer(customer_id):
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/api/merchants', methods=['GET'])
+def get_merchants():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM merchants")
+        merchants = cursor.fetchall()
+        return jsonify({'success': True, 'data': merchants}), HTTPStatus.OK
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/merchants/<int:merchant_id>', methods=['GET'])
+def get_merchant(merchant_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM merchants WHERE merchant_id = %s", (merchant_id,))
+        merchant = cursor.fetchone()
+        if merchant:
+            return jsonify({'success': True, 'data': merchant}), HTTPStatus.OK
+        return jsonify({'success': False, 'error': 'Merchant not found'}), HTTPStatus.NOT_FOUND
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+        
