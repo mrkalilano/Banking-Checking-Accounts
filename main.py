@@ -40,6 +40,15 @@ def validate_merchant(data, required_fields=None):
         return False, f"Missing required fields: {', '.join(missing_fields)}"
     return True, None
 
+def validate_transaction(data, required_fields=None):
+    if required_fields is None:
+        required_fields = ['transaction_type_description', 'amount', 'date_of_transaction', 
+                         'balance', 'Accounts_account_id', 'Merchants_merchant_id']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return False, f"Missing required fields: {', '.join(missing_fields)}"
+    return True, None
+
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
     conn = get_db_connection()
@@ -122,3 +131,32 @@ def get_merchant(merchant_id):
         cursor.close()
         conn.close()
         
+@app.route('/api/transactions', methods=['GET'])
+def get_transactions():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM transactions")
+        transactions = cursor.fetchall()
+        return jsonify({'success': True, 'data': transactions}), HTTPStatus.OK
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/transactions/<int:transaction_id>', methods=['GET'])
+def get_transaction(transaction_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM transactions WHERE transaction_id = %s", (transaction_id,))
+        transaction = cursor.fetchone()
+        if transaction:
+            return jsonify({'success': True, 'data': transaction}), HTTPStatus.OK
+        return jsonify({'success': False, 'error': 'Transaction not found'}), HTTPStatus.NOT_FOUND
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
