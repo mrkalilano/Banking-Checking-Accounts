@@ -44,6 +44,146 @@ def generate_token(user_id, role):
     }, app.config['SECRET_KEY'])
     return token
 
+def generate_token(user_id, role):
+    token = jwt.encode({
+        'user_id': user_id,
+        'role': role,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }, app.config['SECRET_KEY'])
+    return token
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]
+            except IndexError:
+                return jsonify({'success': False, 'error': 'Invalid token format'}), HTTPStatus.UNAUTHORIZED
+        
+        if not token:
+            return jsonify({'success': False, 'error': 'Token is required'}), HTTPStatus.UNAUTHORIZED
+        
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = get_user_by_id(data['user_id'])
+            if not current_user:
+                return jsonify({'success': False, 'error': 'Invalid token'}), HTTPStatus.UNAUTHORIZED
+        except jwt.ExpiredSignatureError:
+            return jsonify({'success': False, 'error': 'Token has expired'}), HTTPStatus.UNAUTHORIZED
+        except jwt.InvalidTokenError:
+            return jsonify({'success': False, 'error': 'Invalid token'}), HTTPStatus.UNAUTHORIZED
+            
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(current_user, *args, **kwargs):
+            if current_user['role'] not in ROLES or required_role not in ROLES[current_user['role']]:
+                return jsonify({'success': False, 'error': 'Insufficient permissions'}), HTTPStatus.FORBIDDEN
+            return f(current_user, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+def validate_email(email):
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None
+
+def validate_phone(phone):
+    pattern = r'^\+?1?\d{9,15}$'
+    return re.match(pattern, phone) is not None
+
+def validate_amount(amount):
+    try:
+        float_amount = float(amount)
+        return float_amount > 0
+    except (TypeError, ValueError):
+        return False
+    
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+    
+    data = request.json
+    required_fields = ['username', 'password', 'email', 'role']
+    
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+    
+    if not validate_email(data['email']):
+        return jsonify({'success': False, 'error': 'Invalid email format'}), HTTPStatus.BAD_REQUEST
+    
+    if data['role'] not in ROLES:
+        return jsonify({'success': False, 'error': 'Invalid role'}), HTTPStatus.BAD_REQUEST
+    
+    if len(data['password']) < 8:
+        return jsonify({'success': False, 'error': 'Password must be at least 8 characters'}), HTTPStatus.BAD_REQUEST
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", 
+                      (data['username'], data['email']))
+        if cursor.fetchone():
+            return jsonify({'success': False, 'error': 'Username or email already exists'}), HTTPStatus.BAD_REQUEST
+        
+        hashed_password = generate_password_hash(data['password'])
+        cursor.execute("""
+            INSERT INTO users (username, password, email, role)
+            VALUES (%s, %s, %s, %s)
+        """, (data['username'], hashed_password, data['email'], data['role']))
+        conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'User registered successfully'
+        }), HTTPStatus.CREATED
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+    
+    data = request.json
+    if not data.get('username') or not data.get('password'):
+        return jsonify({'success': False, 'error': 'Username and password are required'}), HTTPStatus.BAD_REQUEST
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        cursor.execute("SELECT * FROM users WHERE username = %s", (data['username'],))
+        user = cursor.fetchone()
+        
+        if user and check_password_hash(user['password'], data['password']):
+            token = generate_token(user['id'], user['role'])
+            return jsonify({
+                'success': True,
+                'token': token,
+                'user': {
+                    'id': user['id'],
+                    'username': user['username'],
+                    'email': user['email'],
+                    'role': user['role']
+                }
+            }), HTTPStatus.OK
+        return jsonify({'success': False, 'error': 'Invalid credentials'}), HTTPStatus.UNAUTHORIZED
+    finally:
+        cursor.close()
+        conn.close()
+
 def validate_account(data, required_fields=None):
     if required_fields is None:
         required_fields = ['account_name', 'current_balance', 'Customers_customer_id']
