@@ -552,7 +552,9 @@ def delete_merchant(current_user, merchant_id):
 
         
 @app.route('/api/transactions', methods=['GET'])
-def get_transactions():
+@token_required
+@role_required('read')
+def get_transactions(current_user):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -566,7 +568,9 @@ def get_transactions():
         conn.close()
 
 @app.route('/api/transactions/<int:transaction_id>', methods=['GET'])
-def get_transaction(transaction_id):
+@token_required
+@role_required('read')
+def get_transaction(current_user, transaction_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -582,7 +586,9 @@ def get_transaction(transaction_id):
         conn.close()
         
 @app.route('/api/transactions', methods=['POST'])
-def create_transaction():
+@token_required
+@role_required('create')
+def create_transaction(current_user):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -622,7 +628,9 @@ def create_transaction():
     return jsonify({'success': True, 'data': {'transaction_id': new_transaction_id, **data}}), HTTPStatus.CREATED
 
 @app.route('/api/transactions/<int:transaction_id>', methods=['PUT'])
-def update_transaction(transaction_id):
+@token_required
+@role_required('update')
+def update_transaction(current_user, transaction_id):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -647,7 +655,9 @@ def update_transaction(transaction_id):
     return jsonify({'success': True, 'message': 'Transactions updated successfully'}), HTTPStatus.OK
 
 @app.route('/api/transactions/<int:transaction_id>', methods=['DELETE'])
-def delete_transaction(transaction_id):
+@token_required
+@role_required('delete')
+def delete_transaction(current_user, transaction_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
