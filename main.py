@@ -441,7 +441,9 @@ def delete_account(current_user, account_id):
       
 
 @app.route('/api/merchants', methods=['GET'])
-def get_merchants():
+@token_required
+@role_required('read')
+def get_merchants(current_user):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -455,7 +457,9 @@ def get_merchants():
         conn.close()
 
 @app.route('/api/merchants/<int:merchant_id>', methods=['GET'])
-def get_merchant(merchant_id):
+@token_required
+@role_required('read')
+def get_merchant(current_user, merchant_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -471,7 +475,9 @@ def get_merchant(merchant_id):
         conn.close()
         
 @app.route('/api/merchants', methods=['POST'])
-def create_merchant():
+@token_required
+@role_required('create')
+def create_merchant(current_user):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -495,7 +501,9 @@ def create_merchant():
     return jsonify({'success': True, 'data': {'merchant_id': new_merchant_id, **data}}), HTTPStatus.CREATED
 
 @app.route('/api/merchants/<int:merchant_id>', methods=['PUT'])
-def update_merchant(merchant_id):
+@token_required
+@role_required('update')
+def update_merchant(current_user, merchant_id):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -520,7 +528,9 @@ def update_merchant(merchant_id):
     return jsonify({'success': True, 'message': 'Merchants updated successfully'}), HTTPStatus.OK
 
 @app.route('/api/merchants/<int:merchant_id>', methods=['DELETE'])
-def delete_merchant(merchant_id):
+@token_required
+@role_required('delete')
+def delete_merchant(current_user, merchant_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
