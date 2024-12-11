@@ -1,10 +1,14 @@
 from flask import Flask, jsonify, request
 from http import HTTPStatus
 import mysql.connector
-from datetime import datetime
-
+from datetime import datetime, timedelta
+import jwt
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+import re
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'MARK'
 
 DB_CONFIG = {
     'host': 'localhost',
@@ -13,8 +17,32 @@ DB_CONFIG = {
     'database': 'mydb' 
 }
 
+ROLES = {
+    'admin': ['create', 'read', 'update', 'delete'],
+    'manager': ['create', 'read', 'update'],
+    'user': ['read']
+}
+
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
+
+def get_user_by_id(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+def generate_token(user_id, role):
+    token = jwt.encode({
+        'user_id': user_id,
+        'role': role,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }, app.config['SECRET_KEY'])
+    return token
 
 def validate_account(data, required_fields=None):
     if required_fields is None:
