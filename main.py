@@ -422,6 +422,31 @@ def create_transaction():
     conn.close()
 
     return jsonify({'success': True, 'data': {'transaction_id': new_transaction_id, **data}}), HTTPStatus.CREATED
+
+@app.route('/api/transactions/<int:transaction_id>', methods=['PUT'])
+def update_transaction(transaction_id):
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['transaction_type_description', 'amount', 'date_of_transaction', 'balance', 'Accounts_account_id', 'Merchants_merchant_id']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE transactions SET transaction_type_description = %s, amount = %s, date_of_transaction = %s, Accounts_account_id = %s, Merchants_merchant_id = %s
+        WHERE transaction_id = %s
+    """, (data['transaction_type_description'], data['amount'], data['date_of_transaction'], data['Accounts_account_id'], data['Merchants_merchant_id'], transaction_id))
+    conn.commit()
+    if cursor.rowcount == 0:
+        return jsonify({'success': False, 'error': 'Transaction not found'}), HTTPStatus.NOT_FOUND
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Transactions updated successfully'}), HTTPStatus.OK
         
 if __name__ == '__main__':
     app.run(debug=True)
