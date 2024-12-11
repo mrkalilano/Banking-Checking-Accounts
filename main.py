@@ -26,7 +26,7 @@ def validate_account(data, required_fields=None):
 
 def validate_customer(data, required_fields=None):
     if required_fields is None:
-        required_fields = ['customer_name', 'customer_phone', 'customer_email', 'customer_municipality', 
+        required_fields = ['customer_name', 'customer_phone', 'customer_email', 'customer_street', 'customer_municipality', 
                          'customer_city', 'customer_province']
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
@@ -447,6 +447,27 @@ def update_transaction(transaction_id):
     conn.close()
 
     return jsonify({'success': True, 'message': 'Transactions updated successfully'}), HTTPStatus.OK
+
+@app.route('/api/transactions/<int:transaction_id>', methods=['DELETE'])
+def delete_transaction(transaction_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM transactions WHERE transaction_id = %s", (transaction_id,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'error': 'Transaction not found'}), HTTPStatus.NOT_FOUND
+
+        return jsonify({'success': True, 'message': 'Transaction deleted successfully'}), HTTPStatus.OK
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'An error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    finally:
+        cursor.close()
+        conn.close()
         
 if __name__ == '__main__':
     app.run(debug=True)
