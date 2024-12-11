@@ -329,7 +329,9 @@ def delete_customer(current_user, customer_id):
 
         
 @app.route('/api/accounts', methods=['GET'])
-def get_accounts():
+@token_required
+@role_required('read')
+def get_accounts(current_user):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM mydb.accounts;")
@@ -339,7 +341,9 @@ def get_accounts():
     return jsonify({'success': True, 'data': accounts, 'total': len(accounts)}), HTTPStatus.OK
 
 @app.route('/api/accounts/<int:account_id>', methods=['GET'])
-def get_account(account_id):
+@token_required
+@role_required('read')
+def get_account(current_user, account_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM mydb.accounts WHERE account_id = %s", (account_id,))
@@ -351,7 +355,9 @@ def get_account(account_id):
     return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.NOT_FOUND
 
 @app.route('/api/accounts', methods=['POST'])
-def create_account():
+@token_required
+@role_required('create')
+def create_account(current_user):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -384,7 +390,9 @@ def create_account():
     return jsonify({'success': True, 'data': {'account_id': new_account_id, **data}}), HTTPStatus.CREATED
 
 @app.route('/api/accounts/<int:account_id>', methods=['PUT'])
-def update_account(account_id):
+@token_required
+@role_required('update')
+def update_account(current_user, account_id):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -409,7 +417,9 @@ def update_account(account_id):
     return jsonify({'success': True, 'message': 'Accounts updated successfully'}), HTTPStatus.OK
 
 @app.route('/api/accounts/<int:account_id>', methods=['DELETE'])
-def delete_account(account_id):
+@token_required
+@role_required('delete')
+def delete_account(current_user, account_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
