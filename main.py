@@ -331,6 +331,27 @@ def update_merchant(merchant_id):
 
     return jsonify({'success': True, 'message': 'Merchants updated successfully'}), HTTPStatus.OK
 
+@app.route('/api/merchants/<int:merchant_id>', methods=['DELETE'])
+def delete_merchant(merchant_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM merchants WHERE merchant_id = %s", (merchant_id,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'error': 'Merchant not found'}), HTTPStatus.NOT_FOUND
+
+        return jsonify({'success': True, 'message': 'Merchant deleted successfully'}), HTTPStatus.OK
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'An error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    finally:
+        cursor.close()
+        conn.close()
+
         
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
@@ -361,6 +382,46 @@ def get_transaction(transaction_id):
     finally:
         cursor.close()
         conn.close()
+        
+@app.route('/api/transactions', methods=['POST'])
+def create_transaction():
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['transaction_type_description', 'amount', 'date_of_transaction', 'balance', 'Accounts_account_id', 'Merchants_merchant_id']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) FROM accounts WHERE account_id = %s
+    """, (data['Accounts_account_id'],))
+    account_exists = cursor.fetchone()[0]
+    
+    cursor.execute("""
+        SELECT COUNT(*) FROM merchants WHERE merchant_id = %s
+    """, (data['Merchants_merchant_id'],))
+    merchant_exists = cursor.fetchone()[0]
+
+    if not account_exists:
+        return jsonify({'success': False, 'error': 'Account not found'}), HTTPStatus.BAD_REQUEST
+    if not merchant_exists:
+        return jsonify({'success': False, 'error': 'Merchant not found'}), HTTPStatus.BAD_REQUEST
+
+    cursor.execute("""
+        INSERT INTO transactions (transaction_type_description, amount, date_of_transaction, balance, Accounts_account_id, Merchants_merchant_id)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (data['transaction_type_description'], data['amount'], data['date_of_transaction'], data['balance'], data['Accounts_account_id'], data['Merchants_merchant_id']))
+    conn.commit()
+    new_transaction_id = cursor.lastrowid
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'data': {'transaction_id': new_transaction_id, **data}}), HTTPStatus.CREATED
         
 if __name__ == '__main__':
     app.run(debug=True)
