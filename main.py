@@ -305,6 +305,32 @@ def create_merchant():
     conn.close()
 
     return jsonify({'success': True, 'data': {'merchant_id': new_merchant_id, **data}}), HTTPStatus.CREATED
+
+@app.route('/api/merchants/<int:merchant_id>', methods=['PUT'])
+def update_merchant(merchant_id):
+    if not request.json:
+        return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    data = request.json
+    required_fields = ['merchant_name', 'merchant_email']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'error': f'{field} is required'}), HTTPStatus.BAD_REQUEST
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE merchants SET merchant_name = %s, merchant_email = %s
+        WHERE merchant_id = %s
+    """, (data['merchant_name'], data['merchant_email'], merchant_id))
+    conn.commit()
+    if cursor.rowcount == 0:
+        return jsonify({'success': False, 'error': 'Merchant not found'}), HTTPStatus.NOT_FOUND
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Merchants updated successfully'}), HTTPStatus.OK
+
         
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
