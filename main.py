@@ -218,7 +218,9 @@ def validate_transaction(data, required_fields=None):
     return True, None
 
 @app.route('/api/customers', methods=['GET'])
-def get_customers():
+@token_required
+@role_required('read')
+def get_customers(current_user):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -232,7 +234,9 @@ def get_customers():
         conn.close()
 
 @app.route('/api/customers/<int:customer_id>', methods=['GET'])
-def get_customer(customer_id):
+@token_required
+@role_required('read')
+def get_customer(current_user, customer_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -248,7 +252,9 @@ def get_customer(customer_id):
         conn.close()
         
 @app.route('/api/customers', methods=['POST'])
-def create_customer():
+@token_required
+@role_required('create')
+def create_customer(current_user):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -272,7 +278,9 @@ def create_customer():
     return jsonify({'success': True, 'data': {'customer_id': new_customer_id, **data}}), HTTPStatus.CREATED
 
 @app.route('/api/customers/<int:customer_id>', methods=['PUT'])
-def update_customer(customer_id):
+@token_required
+@role_required('update')
+def update_customer(current_user, customer_id):
     if not request.json:
         return jsonify({'success': False, 'error': 'Request must be JSON'}), HTTPStatus.BAD_REQUEST
 
@@ -297,7 +305,9 @@ def update_customer(customer_id):
     return jsonify({'success': True, 'message': 'Customer updated successfully'}), HTTPStatus.OK
 
 @app.route('/api/customers/<int:customer_id>', methods=['DELETE'])
-def delete_customer(customer_id):
+@token_required
+@role_required('delete')
+def delete_customer(current_user, customer_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
