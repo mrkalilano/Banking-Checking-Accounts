@@ -218,9 +218,7 @@ def validate_transaction(data, required_fields=None):
     return True, None
 
 @app.route('/api/customers', methods=['GET'])
-@token_required
-@role_required('read')
-def get_customers(current_user):
+def get_customers():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -329,9 +327,7 @@ def delete_customer(current_user, customer_id):
 
         
 @app.route('/api/accounts', methods=['GET'])
-@token_required
-@role_required('read')
-def get_accounts(current_user):
+def get_accounts():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM mydb.accounts;")
@@ -441,9 +437,7 @@ def delete_account(current_user, account_id):
       
 
 @app.route('/api/merchants', methods=['GET'])
-@token_required
-@role_required('read')
-def get_merchants(current_user):
+def get_merchants():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -552,9 +546,7 @@ def delete_merchant(current_user, merchant_id):
 
         
 @app.route('/api/transactions', methods=['GET'])
-@token_required
-@role_required('read')
-def get_transactions(current_user):
+def get_transactions():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
