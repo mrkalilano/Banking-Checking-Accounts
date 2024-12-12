@@ -217,6 +217,79 @@ def validate_transaction(data, required_fields=None):
         return False, f"Missing required fields: {', '.join(missing_fields)}"
     return True, None
 
+@app.route("/")
+def index():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Banking Checking Accounts System</title>
+        <style>
+            body {
+                font-family: Arial, aptos-display;
+                background-color: #B2D6ED;
+                color: #333;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+                padding-top: 50px;
+            }
+            button {
+                background-color: #00172D;
+                color: white;
+                border: none;
+                padding: 15px 25px;
+                font-size: 1.2em;
+                margin: 10px;
+                cursor: pointer;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }
+            button:hover {
+                background-color: #003E7F;
+            }
+            h1 {
+                font-size: 2.5em;
+                color: #333;
+                font-weight: bold;
+            }
+            .description {
+                font-size: 1.5em;
+                color: black;
+                font-weight: normal;
+                margin-top: 10px;
+                text-align: center;
+            }
+            .intro {
+                font-size: 1.2em;
+                color: black;
+                font-weight: normal;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            .note {
+                font-size: 1.1em;
+                color: black;
+                margin-top: 30px;
+                font-style: italic;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Banking Checking Accounts System</h1>
+        <p class="description">The Banking Checking Accounts System is designed to manage and track customer checking accounts and their associated transactions.</p>
+        <p class="intro">The database can be accessed using a number of endpoints, including:</p>
+        <button onclick=\"window.location.href='http://127.0.0.1:5000/api/customers'\">Customers</button>
+        <button onclick=\"window.location.href='http://127.0.0.1:5000/api/accounts'\">Accounts</button>
+        <button onclick=\"window.location.href='http://127.0.0.1:5000/api/merchants'\">Merchants</button>
+        <button onclick=\"window.location.href='http://127.0.0.1:5000/api/transactions'\">Transactions</button>
+        <p class="note">To interact with the API, use the routes that are provided. Register a user account first, and when required, be sure to use valid authentication tokens.</p>
+    </body>
+    </html>
+    """
+
 @app.route('/api/customers', methods=['GET'])
 def get_customers():
     try:
