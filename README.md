@@ -9,15 +9,15 @@ pip install -r requirements.txt
 
 ## Configuration
 To configure the database:
-1. Download the raw file of my mydb.sql in your device.
-2. Import ```mydb``` MySQL database to your server or local machine.
+1. Download the raw file of my banking_checking_account.sql in your device.
+2. Import ```banking_checking_account``` MySQL database to your server or local machine.
 2. Update the database configuration in the Flask app with your database connection details.
 
 Environment variables needed:
 - ```MYSQL_HOST```: The host for the MySQL database (e.g., localhost or IP address of the database server)
 - ```MYSQL_USER```: MySQL username (e.g., root)
 - ```MYSQL_PASSWORD```: MySQL password
-- ```MYSQL_DB```: Name of the database (e.g., mydb)
+- ```MYSQL_DB```: Name of the database (e.g., banking_checking_account)
 - ```SECRET_KEY```: MARK
 
 ## API Endpoints
