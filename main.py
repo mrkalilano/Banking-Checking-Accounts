@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from http import HTTPStatus
 import mysql.connector
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -48,7 +48,7 @@ def generate_token(user_id, role):
     token = jwt.encode({
         'user_id': user_id,
         'role': role,
-        'exp': datetime.utcnow() + timedelta(hours=24)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
     }, app.config['SECRET_KEY'])
     return token
 
