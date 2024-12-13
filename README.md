@@ -27,8 +27,8 @@ Environment variables needed:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | /	| GET	| Home/Index |
-| /auth/register	| POST	| register a user account |
-| /auth/login	| POST	| login a user account |
+| /auth/register	| POST	| Register a user's account |
+| /auth/login	| POST	| Login a user's account |
 | /customers	| GET	| List all customers |
 | /customers/<customer_id>	| GET	| List a specific customer using customer ID |
 | /customers	| POST	| Add a new customer |
